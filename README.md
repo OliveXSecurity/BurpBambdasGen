@@ -47,9 +47,8 @@ for direct import into Burp. The knowledge base is extensible: point the ingest
 script at your own `.bambda` collection and the generator starts producing code
 in your team's style.
 
----
-
-## Descripción general
+<details>
+<summary><strong>Descripción general (español)</strong></summary>
 
 **Qué hace.** BurpBambdasGen convierte una descripción en lenguaje natural en un
 script Bambda funcional para Burp Suite. Los Bambdas son los fragmentos de Java
@@ -92,236 +91,238 @@ exportan a `.bambda` (YAML) para importarlos directo en Burp. La base de
 conocimiento es extensible: apuntá el script de ingesta a tu propia colección de
 `.bambda` y el generador empieza a producir código con el estilo de tu equipo.
 
+</details>
+
 ---
 
-## ¿Cómo funciona?
+## Pipeline
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  1. TU PROMPT                                                   │
-│     "filter para mostrar solo respuestas 403"                   │
+│  1. YOUR PROMPT                                                 │
+│     "filter showing only 403 responses"                         │
 └─────────────────────┬───────────────────────────────────────────┘
                       ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  2. BÚSQUEDA EN RAG (data/bambdas.json)                         │
-│     - Busca bambdas similares por keywords                      │
-│     - Encuentra 3 ejemplos relevantes del repositorio           │
-│     - Busca documentación relacionada                           │
+│  2. RAG RETRIEVAL (data/bambdas.json)                           │
+│     - Ranks stored Bambdas by keyword overlap                   │
+│     - Picks the 3 closest examples from the corpus              │
+│     - Pulls the matching API documentation                      │
 └─────────────────────┬───────────────────────────────────────────┘
                       ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  3. CONSTRUYE PROMPT PARA CLAUDE                                │
+│  3. PROMPT ASSEMBLY                                             │
 │                                                                 │
-│     SYSTEM: "Eres experto en Bambdas, tipos, API Montoya..."    │
+│     SYSTEM: Bambda types, Montoya API, return contracts         │
 │                                                                 │
 │     USER:                                                       │
-│       - Tu descripción                                          │
-│       - Tipo detectado (VIEW_FILTER, CUSTOM_ACTION, etc.)       │
-│       - Documentación relevante                                 │
-│       - 3 ejemplos de bambdas similares (código completo)       │
+│       - Your description                                        │
+│       - Detected type (VIEW_FILTER, CUSTOM_ACTION, ...)         │
+│       - Relevant documentation                                  │
+│       - 3 similar Bambdas, full source included                 │
 └─────────────────────┬───────────────────────────────────────────┘
                       ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │  4. CLAUDE API                                                  │
-│     - Recibe el prompt enriquecido con contexto RAG             │
-│     - Genera código Java basado en los ejemplos reales          │
+│     - Receives the RAG-enriched prompt                          │
+│     - Writes Java grounded in the retrieved examples            │
 └─────────────────────┬───────────────────────────────────────────┘
                       ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │  5. OUTPUT                                                      │
-│     - Valida sintaxis básica                                    │
-│     - Muestra código generado                                   │
-│     - Opción de guardar como .bambda                            │
+│     - Validates the return contract and syntax                  │
+│     - Prints the generated code                                 │
+│     - Optionally exports to .bambda                             │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## Instalación
+## Installation
 
 ```bash
-git clone https://github.com/OliveXSec/BurpBambdasGen.git
+git clone https://github.com/OliveXSecurity/BurpBambdasGen.git
 cd BurpBambdasGen
 
-# Crear entorno virtual
+# Create a virtual environment
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
+source venv/bin/activate  # Linux/macOS
 # venv\Scripts\activate   # Windows
 
-# Instalar dependencias
+# Install dependencies
 pip install -r requirements.txt
 
-# Configurar API key
-echo "ANTHROPIC_API_KEY=tu-api-key" > .env
+# Configure the API key
+echo "ANTHROPIC_API_KEY=your-api-key" > .env
 ```
 
-## Uso
+## Usage
 
-### 1. Generar Bambdas
+### 1. Generate Bambdas
 
-Los 94 ejemplos de bambdas ya vienen en `data/bambdas.json`, así que podés generar
-directamente. La documentación de PortSwigger **no** se distribuye con el repo
-(ver [`data/README.md`](data/README.md)); sin ella el generador funciona igual,
-solo recupera menos contexto.
+The 94 example Bambdas ship with the repository in `data/bambdas.json`, so you
+can generate straight away. PortSwigger's documentation is **not** redistributed
+here (see [`data/README.md`](data/README.md)); without it the generator still
+works, it simply retrieves less context.
 
-### 2. Ampliar el knowledge base (opcional)
-
+**Direct command:**
 ```bash
-python scripts/ingest.py /ruta/al/knowledge-base
+python bambda-gen.py generate "filter showing only 403 responses" -t filter
 ```
 
-Indexa `.bambda` adicionales y, si los tenés localmente, la documentación de
-Bambdas y la referencia de la API Montoya.
-
-**Comando directo:**
-```bash
-python bambda-gen.py generate "filter para mostrar solo respuestas 403" -t filter
-```
-
-**Modo interactivo:**
+**Interactive mode:**
 ```bash
 python bambda-gen.py interactive
 ```
 
-## Comandos CLI
+### 2. Extend the knowledge base (optional)
+
+```bash
+python scripts/ingest.py /path/to/knowledge-base
+```
+
+Indexes additional `.bambda` files and, if you hold them locally, the Bambda
+documentation and the Montoya API reference.
+
+## CLI commands
 
 ```bash
 python bambda-gen.py --help
 
-Comandos:
-  generate     Generar bambda desde descripción
-  ingest       Ingestar documentos en la base de datos
-  list         Listar ejemplos de bambdas
-  types        Mostrar tipos de bambdas disponibles
-  interactive  Modo interactivo
-  status       Estado de la base de datos
+Commands:
+  generate     Generate a Bambda from a description
+  ingest       Ingest documents into the knowledge base
+  list         List the stored Bambda examples
+  types        Show the available Bambda types
+  interactive  Interactive mode
+  status       Knowledge base status
 ```
 
-### Opciones de Generate
+### Generate options
 
 ```bash
-python bambda-gen.py generate "descripción" [OPCIONES]
+python bambda-gen.py generate "description" [OPTIONS]
 
-Opciones:
-  -t, --type       Tipo: filter, column, action, scan-active, scan-passive
-  -o, --output     Guardar en archivo
-  -c, --copy       Copiar al clipboard
-  -e, --examples   Número de ejemplos a usar (default: 3)
+Options:
+  -t, --type       Type: filter, column, action, scan-active, scan-passive
+  -o, --output     Write to a file
+  -c, --copy       Copy to the clipboard
+  -e, --examples   Number of RAG examples to use (default: 3)
 ```
 
-## Tipos de Bambdas
+## Bambda types
 
-| Tipo | Alias | Return | Descripción |
-|------|-------|--------|-------------|
-| VIEW_FILTER | filter | boolean | Filtrar tablas de proxy/logger |
-| CUSTOM_COLUMN | column | String | Columna personalizada en tablas |
-| CUSTOM_ACTION | action | void | Acción en Repeater |
-| SCAN_CHECK_ACTIVE_* | scan-active | AuditResult | Scan activo |
-| SCAN_CHECK_PASSIVE | scan-passive | AuditResult | Scan pasivo |
-| MATCH_AND_REPLACE_REQUEST | match-request | HttpRequest | Modificar requests |
-| MATCH_AND_REPLACE_RESPONSE | match-response | HttpResponse | Modificar responses |
+| Type | Alias | Returns | Purpose |
+|------|-------|---------|---------|
+| VIEW_FILTER | filter | boolean | Filter the Proxy/Logger tables |
+| CUSTOM_COLUMN | column | String | Custom table column |
+| CUSTOM_ACTION | action | void | Repeater action |
+| SCAN_CHECK_ACTIVE_* | scan-active | AuditResult | Active scan check |
+| SCAN_CHECK_PASSIVE | scan-passive | AuditResult | Passive scan check |
+| MATCH_AND_REPLACE_REQUEST | match-request | HttpRequest | Rewrite requests |
+| MATCH_AND_REPLACE_RESPONSE | match-response | HttpResponse | Rewrite responses |
 
-## Ejemplos de Prompts
+## Example prompts
 
-**Filtros:**
+**Filters:**
 ```bash
-python bambda-gen.py generate "mostrar solo requests con JWT en cookies" -t filter
-python bambda-gen.py generate "highlight en rojo las respuestas 500" -t filter
-python bambda-gen.py generate "filtrar requests que contengan SQLi patterns" -t filter
+python bambda-gen.py generate "show only requests carrying a JWT in a cookie" -t filter
+python bambda-gen.py generate "highlight 500 responses in red" -t filter
+python bambda-gen.py generate "filter requests containing SQLi patterns" -t filter
 ```
 
-**Columnas:**
+**Columns:**
 ```bash
-python bambda-gen.py generate "extraer el header Server" -t column
-python bambda-gen.py generate "mostrar el algoritmo JWT del token" -t column
-python bambda-gen.py generate "mostrar tiempo de respuesta en ms" -t column
+python bambda-gen.py generate "extract the Server header" -t column
+python bambda-gen.py generate "show the signing algorithm of the JWT" -t column
+python bambda-gen.py generate "show the response time in ms" -t column
 ```
 
-**Acciones:**
+**Actions:**
 ```bash
-python bambda-gen.py generate "enviar request 10 veces para race condition" -t action
-python bambda-gen.py generate "decodificar Base64 en el response" -t action
-python bambda-gen.py generate "extraer todas las URLs del body" -t action
+python bambda-gen.py generate "send the request 10 times for a race condition" -t action
+python bambda-gen.py generate "decode Base64 in the response" -t action
+python bambda-gen.py generate "extract every URL from the body" -t action
 ```
 
-**Scan Checks:**
+**Scan checks:**
 ```bash
-python bambda-gen.py generate "detectar header CSP faltante" -t scan-passive
-python bambda-gen.py generate "probar CORS misconfiguration" -t scan-active
-python bambda-gen.py generate "detectar SSTI" -t scan-active
+python bambda-gen.py generate "detect a missing CSP header" -t scan-passive
+python bambda-gen.py generate "test for CORS misconfiguration" -t scan-active
+python bambda-gen.py generate "detect SSTI" -t scan-active
 ```
 
-## Estructura del Proyecto
+## Project layout
 
 ```
 BurpBambdasGen/
-├── bambda-gen.py          # Entry point CLI
-├── requirements.txt       # Dependencias
-├── .env                   # API key (crear manualmente)
+├── bambda-gen.py          # CLI entry point
+├── requirements.txt       # Dependencies
+├── .env                   # API key (create manually)
 │
 ├── src/
 │   ├── config/
-│   │   ├── settings.py    # Configuración
-│   │   └── prompts.py     # System prompt y templates
+│   │   ├── settings.py    # Configuration
+│   │   └── prompts.py     # System prompt and templates
 │   │
 │   ├── ingestion/
-│   │   ├── loader.py      # Cargar .bambda y docs
-│   │   └── chunker.py     # Dividir documentación
+│   │   ├── loader.py      # Loads .bambda files and docs
+│   │   └── chunker.py     # Splits documentation into chunks
 │   │
 │   ├── retrieval/
-│   │   ├── vectorstore.py # Almacenamiento JSON + búsqueda
-│   │   └── retriever.py   # Lógica de búsqueda
+│   │   ├── vectorstore.py # JSON store and search
+│   │   └── retriever.py   # Retrieval logic
 │   │
 │   ├── generation/
-│   │   ├── generator.py   # Integración Claude API
-│   │   └── validator.py   # Validación de código
+│   │   ├── generator.py   # Claude API integration
+│   │   └── validator.py   # Generated-code validation
 │   │
 │   └── cli/
-│       └── main.py        # Aplicación CLI (Typer)
+│       └── main.py        # CLI application (Typer)
 │
 ├── data/
-│   └── bambdas.json       # Base de datos de ejemplos (94 bambdas)
+│   └── bambdas.json       # Example corpus (94 Bambdas)
 │
 └── scripts/
-    └── ingest.py          # Script de ingesta
+    └── ingest.py          # Ingestion script
 ```
 
-## Variables de Entorno
+## Environment variables
 
 ```bash
 # .env
-ANTHROPIC_API_KEY=sk-ant-...    # Requerido
-MODEL_NAME=claude-opus-5-5      # Modelo Claude
-MAX_TOKENS=4096                 # Límite de tokens de salida
-N_EXAMPLES=3                    # Ejemplos RAG por defecto
-DATA_DIR=data                   # Directorio de datos
+ANTHROPIC_API_KEY=sk-ant-...    # Required
+MODEL_NAME=claude-opus-5-5      # Claude model
+MAX_TOKENS=4096                 # Output token limit
+N_EXAMPLES=3                    # Default number of RAG examples
+DATA_DIR=data                   # Data directory
 ```
 
-> Los modelos actuales de Claude no aceptan el parámetro `temperature` (devuelven
-> HTTP 400), por eso la herramienta no lo expone.
+> Current Claude models reject the `temperature` parameter with HTTP 400, which
+> is why the tool does not expose it.
 
-## ¿Por qué RAG?
+## Why RAG?
 
-Sin RAG, Claude genera código "de memoria" que puede tener errores de sintaxis o no seguir los patrones correctos de la API Montoya.
+Without retrieval, a model writes Bambdas from memory: syntax that almost
+compiles, Montoya API calls that almost exist, and return types that do not
+match the contract of the Bambda type.
 
-Con RAG:
-- Claude ve **ejemplos reales** de bambdas que funcionan
-- Aprende los **patrones correctos** de cada tipo
-- Usa la **documentación oficial** como referencia
-- Genera código más **preciso y funcional**
+With retrieval, the model sees **real, working Bambdas** of the same type, picks
+up the **correct patterns** for each one, references the **official
+documentation**, and produces code that holds up in Burp's editor.
 
-## Dependencias
+## Dependencies
 
-| Paquete | Uso |
-|---------|-----|
-| `anthropic` | Cliente API de Claude |
-| `typer` + `rich` | CLI interactivo |
-| `python-dotenv` | Cargar variables de `.env` |
-| `pyyaml` | Exportar bambdas en formato YAML |
-| `pyperclip` | Copiar al clipboard (opcional) |
+| Package | Purpose |
+|---------|---------|
+| `anthropic` | Claude API client |
+| `typer` + `rich` | Interactive CLI |
+| `python-dotenv` | Loads variables from `.env` |
+| `pyyaml` | Exports Bambdas in YAML format |
+| `pyperclip` | Clipboard support (optional) |
 
-## Requisitos
+## Requirements
 
 - Python 3.10+
-- API key de Anthropic (Claude)
+- An Anthropic (Claude) API key
 
 ## Tests
 
@@ -330,12 +331,12 @@ pip install -e ".[dev]"
 pytest
 ```
 
-## Créditos
+## Credits
 
-Los 94 ejemplos de bambdas provienen del
-[repositorio público de PortSwigger](https://github.com/PortSwigger/bambdas) y
-conservan el `@author` original en `metadata.author`.
+The 94 example Bambdas come from
+[PortSwigger's public repository](https://github.com/PortSwigger/bambdas) and
+retain their original `@author` in `metadata.author`.
 
-## Licencia
+## License
 
-MIT. Ver [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
